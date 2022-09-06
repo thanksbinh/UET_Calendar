@@ -1,43 +1,52 @@
-function gCalendar() {
+function gSheet() {
 
   var sheet = SpreadsheetApp.getActiveSheet();
-  var calendarId = sheet.getRange('B1').getValue().toString(); 
+  const STARTROW = 2;
+  var table = sheet.getRange("A" + STARTROW.toString() + ":M").getValues();
+
+  // Clear sheet's "Dang ky" options
+  this.clearSheet = function() {
+    for (var i=0; i<table.length; i++) {
+      var rownNumb = i + STARTROW;
+      sheet.getRange(rownNumb, 1).setValue("");
+    }
+  };
+}
+
+function gCalendar() {
+
+  var infoSheet = SpreadsheetApp.getActive().getSheetByName('Info');
+  var calendarId = infoSheet.getRange('B1').getValue().toString(); 
   var calendar;
   if (calendarId == "") {
-    calendar = CalendarApp.createCalendar('UET Calendar', {
-                                          summary: 'Made by ThanksBinh',
-                                          hidden: false,
-                                          selected: true
-  });
-    sheet.getRange('B1').setValue(calendar.getId());
+    calendar = CalendarApp.createCalendar('UET Calendar', {summary: 'Made by ThanksBinh', hidden: false, selected: true});
+    infoSheet.getRange('B1').setValue(calendar.getId());
   }
   else {
     calendar = CalendarApp.getCalendarById(calendarId);
   }
 
-  var startDate = sheet.getRange('B2').getValue();
-  var endDate = sheet.getRange('B3').getValue();
+  var startDate = infoSheet.getRange('B2').getValue();
+  var endDate = infoSheet.getRange('B3').getValue();
   if (endDate == "") {
     endDate = new Date(startDate);
     endDate.setDate(endDate.getDate() + 15*7);
-    sheet.getRange('B3').setValue(endDate);
+    infoSheet.getRange('B3').setValue(endDate);
   }
 
-  var table = sheet.getRange("A8:M").getValues();
-  var DK = 0, MHP = 1, HP = 2, TC = 3, MLHP = 4, SSV = 5, GVTG = 6, Thu = 7, Tiet = 8, GD = 9, Nhom = 10, GC = 11, ID = 12;
+  var sheet = SpreadsheetApp.getActiveSheet();
+  const STARTROW = 2;
+  var table = sheet.getRange("A" + STARTROW.toString() + ":M").getValues();
+  const DK = 0, MHP = 1, HP = 2, TC = 3, MLHP = 4, SSV = 5, GVTG = 6, Thu = 7, Tiet = 8, GD = 9, Nhom = 10, GC = 11, ID = 12;
 
-  // Delete calendar and clear sheet info
+  // Delete calendar and clear sheet id
   this.deleteCal = function() {
     calendar.deleteCalendar();
     sheet.getRange('B1').setValue('');
+    
     for (var i=0; i<table.length; i++) {
-
-      var rowNumb = i + 8;
-
-      if (table[i][ID] != "") {
-        sheet.getRange(rowNumb, ID+1).setValue("");
-        sheet.getRange(rowNumb, 1).setValue("");
-      }
+      var rownNumb = i + STARTROW;
+      sheet.getRange(rownNumb, ID+1).setValue("");
     }
   };
 
@@ -106,9 +115,7 @@ function gCalendar() {
 
     // Add subject if Dang ky
     for (var i=0; i<table.length; i++) {
-
-      var rowNumb = i + 8;
-
+      var rowNumb = i + STARTROW;
       if (table[i][DK] == "") {
         if (table[i][ID] != "") {
           var events = calendar.getEventSeriesById(table[i][ID].toString());
@@ -185,6 +192,9 @@ function onOpen() {
   }, {
     name: "Delete Calendar",
     functionName: "deleteCalendar"
+  }, {
+    name: "Clear Sheet",
+    functionName: "clearSheet"
   }], activeSheet;
 
   activeSheet = SpreadsheetApp.getActiveSpreadsheet();
@@ -203,4 +213,7 @@ function deleteCalendar() {
   (new gCalendar).deleteCal();
 }
 
+function clearSheet() {
+  (new gSheet).clearSheet();
+}
 

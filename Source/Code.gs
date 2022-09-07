@@ -1,53 +1,79 @@
-function gSheet() {
+const STARTROW = 2;
+const DK = 0, MHP = 1, HP = 2, TC = 3, MLHP = 4, SSV = 5, GVTG = 6, Thu = 7, Tiet = 8, GD = 9, Nhom = 10, GC = 11, ID = 12;
 
-  var sheet = SpreadsheetApp.getActiveSheet();
-  const STARTROW = 2;
-  var table = sheet.getRange("A" + STARTROW.toString() + ":M").getValues();
+function gSheet(name) {
+
+  var sheet = SpreadsheetApp.getActive().getSheetByName(name);
+
+  this.getSheet = function() {
+    return sheet;
+  }
 
   // Clear sheet's "Dang ky" options
-  this.clearSheet = function() {
-    for (var i=0; i<table.length; i++) {
-      var rownNumb = i + STARTROW;
-      sheet.getRange(rownNumb, 1).setValue("");
-    }
+  this.clearSelection = function() {
+    sheet.getRange("A" + STARTROW.toString() + ":A").clearContent();
   };
+
+  // Clear ID column
+  this.clearID = function() {
+    sheet.getRange("M" + STARTROW.toString() + ":M").clearContent();
+  };
+
+  // Clear Calendar ID 
+  this.clearCalID = function() {
+    sheet.getRange('B1').clearContent();;
+  };
+
+  // Clear End Date 
+  this.clearEndDate = function() {
+    sheet.getRange('B3').clearContent();;
+  }
 }
 
-function gCalendar() {
-
-  var infoSheet = SpreadsheetApp.getActive().getSheetByName('Info');
+function gCalendar(infoSh, scheduleSh) {
+  
+  var infoSheet = infoSh.getSheet();
   var calendarId = infoSheet.getRange('B1').getValue().toString(); 
   var calendar;
-  if (calendarId == "") {
-    calendar = CalendarApp.createCalendar('UET Calendar', {summary: 'Made by ThanksBinh', hidden: false, selected: true});
-    infoSheet.getRange('B1').setValue(calendar.getId());
-  }
-  else {
-    calendar = CalendarApp.getCalendarById(calendarId);
-  }
-
   var startDate = infoSheet.getRange('B2').getValue();
   var endDate = infoSheet.getRange('B3').getValue();
-  if (endDate == "") {
-    endDate = new Date(startDate);
-    endDate.setDate(endDate.getDate() + 15*7);
-    infoSheet.getRange('B3').setValue(endDate);
-  }
 
-  var sheet = SpreadsheetApp.getActiveSheet();
-  const STARTROW = 2;
-  var table = sheet.getRange("A" + STARTROW.toString() + ":M").getValues();
-  const DK = 0, MHP = 1, HP = 2, TC = 3, MLHP = 4, SSV = 5, GVTG = 6, Thu = 7, Tiet = 8, GD = 9, Nhom = 10, GC = 11, ID = 12;
+  var scheduleSheet = scheduleSh.getSheet();
+  var table = scheduleSheet.getRange("A" + STARTROW.toString() + ":M").getValues();
+
+  // init calendar ID
+  this.initCal = function() {
+
+    // init calendar ID
+    if (calendarId == "") {
+      calendar = CalendarApp.createCalendar('UET Calendar', {summary: 'Made by ThanksBinh', hidden: false, selected: true});
+      infoSheet.getRange('B1').setValue(calendar.getId());
+    }
+    else {
+      calendar = CalendarApp.getCalendarById(calendarId);
+    }
+
+    // validate start date
+    startDate.setDate(startDate.getDate() + (1 + 7 - startDate.getDay()) % 7);
+    infoSheet.getRange('B2').setValue(startDate);
+
+    // init endDate
+    if (endDate == "") {
+      endDate = new Date(startDate);
+      endDate.setDate(endDate.getDate() + 15*7);
+      infoSheet.getRange('B3').setValue(endDate);
+    }
+  };
 
   // Delete calendar and clear sheet id
   this.deleteCal = function() {
-    calendar.deleteCalendar();
-    sheet.getRange('B1').setValue('');
-    
-    for (var i=0; i<table.length; i++) {
-      var rownNumb = i + STARTROW;
-      sheet.getRange(rownNumb, ID+1).setValue("");
+
+    if (infoSheet.getRange('B1').getValue().toString() == "") {
+      SpreadsheetApp.getUi().alert("No Calendar ID found");
+      return;
     }
+
+    CalendarApp.getCalendarById(calendarId).deleteCalendar();
   };
 
   // Add "Tuần 1 .. 15"
@@ -116,24 +142,23 @@ function gCalendar() {
     // Add subject if Dang ky
     for (var i=0; i<table.length; i++) {
       var rowNumb = i + STARTROW;
-      if (table[i][DK] == "") {
-        if (table[i][ID] != "") {
-          var events = calendar.getEventSeriesById(table[i][ID].toString());
+      var row = table[i];
+
+      if (row[DK] == "") {
+        if (row[ID] != "") {
+          var events = calendar.getEventSeriesById(row[ID].toString());
           events.deleteEventSeries();
 
-          sheet.getRange(rowNumb, ID+1).setValue("");
+          scheduleSheet.getRange(rowNumb, ID+1).clearContent();
         }
         continue;
       }
       else {
-        if (table[i][ID] != "") continue;
+        if (row[ID] != "") continue;
       }
 
-      var row = table[i];
-
       var title = row[Nhom] + " - " + row[HP];
-      var des = "Mã lớp học phần: " + row[MLHP] + "\nTín chỉ: " + row[TC] + "\nGiảng viên/ Trợ giảng: " + row[GVTG];
-      if (row[GC] != "") des += "\nGhi chú: " + row[GC];
+      var des = "Mã lớp học phần: " + row[MLHP] + "\nTín chỉ: " + row[TC] + "\nGiảng viên/ Trợ giảng: " + row[GVTG] + "\nGhi chú: " + row[GC];
       var loca = row[GD];
 
       var startTime = new Date(startDate);
@@ -152,6 +177,8 @@ function gCalendar() {
       endTime.setHours(endHour);
 
       var valid = true;
+      // Add something here . . .
+      
       if (valid) {
         if(weeks.length == 0) {
           var eventSeries = calendar.createEventSeries( title, 
@@ -161,7 +188,7 @@ function gCalendar() {
                                       {description: des, location: loca});
 
           Logger.log(title + " " + startTime + " " + endTime);
-          sheet.getRange(rowNumb, ID+1).setValue(eventSeries.getId());
+          scheduleSheet.getRange(rowNumb, ID+1).setValue(eventSeries.getId());
         }
         else {
           startTime.setDate(startTime.getDate()+(weeks[0]-1)*7);
@@ -174,12 +201,14 @@ function gCalendar() {
                                       {description: des, location: loca});
 
           Logger.log(title + " " + startTime + " " + endTime + " " + weeks);
-          sheet.getRange(rowNumb, ID+1).setValue(eventSeries.getId());
+          scheduleSheet.getRange(rowNumb, ID+1).setValue(eventSeries.getId());
         }
       }
     }
   };
 }
+
+/* --------------------------------------------------------------------------------- */
 
 function onOpen() {
   "use strict";
@@ -193,27 +222,35 @@ function onOpen() {
     name: "Delete Calendar",
     functionName: "deleteCalendar"
   }, {
-    name: "Clear Sheet",
-    functionName: "clearSheet"
+    name: "Clear Selection",
+    functionName: "clearSelection"
   }], activeSheet;
 
   activeSheet = SpreadsheetApp.getActiveSpreadsheet();
   activeSheet.addMenu('Code', menuEntries);
 }
 
+var infoSh = new gSheet("info");
+var scheduleSh = new gSheet("UET HK1 2022");
+var gCal = new gCalendar(infoSh, scheduleSh);
+
 function make() {
-  (new gCalendar).exportToCalendar();
+  gCal.initCal();
+  gCal.exportToCalendar();
 }
 
 function addWeekNumb() {
-  (new gCalendar).addWeekNumb();
+  gCal.initCal();
+  gCal.addWeekNumb();
 }
 
 function deleteCalendar() {
-  (new gCalendar).deleteCal();
+  gCal.deleteCal();
+  infoSh.clearCalID();
+  infoSh.clearEndDate();
+  scheduleSh.clearID();
 }
 
-function clearSheet() {
-  (new gSheet).clearSheet();
+function clearSelection() {
+  scheduleSh.clearSelection();
 }
-

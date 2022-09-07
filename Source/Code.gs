@@ -46,7 +46,7 @@ function gCalendar(infoSh, scheduleSh) {
 
     // init calendar ID
     if (calendarId == "") {
-      calendar = CalendarApp.createCalendar('UET Calendar', {summary: 'Made by ThanksBinh', hidden: false, selected: true});
+      calendar = CalendarApp.createCalendar('UET Calendar', {summary: 'Made by ThanksBinh', hidden: false, selected: true, color: "#7cd2fd"});
       infoSheet.getRange('B1').setValue(calendar.getId());
     }
     else {
@@ -155,6 +155,10 @@ function gCalendar(infoSh, scheduleSh) {
       }
       else {
         if (row[ID] != "") continue;
+        else if (row[HP] == "" || row[Thu] == "" || row[Tiet] == "") {
+          SpreadsheetApp.getUi().alert("Invalid selection");
+          continue;
+        }
       }
 
       var title = row[Nhom] + " - " + row[HP];
@@ -231,7 +235,7 @@ function onOpen() {
 }
 
 var infoSh = new gSheet("info");
-var scheduleSh = new gSheet("UET HK1 2022");
+var scheduleSh = new gSheet(infoSh.getSheet().getRange('B4').getValue().toString());
 var gCal = new gCalendar(infoSh, scheduleSh);
 
 function make() {

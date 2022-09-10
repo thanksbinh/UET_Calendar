@@ -1,6 +1,7 @@
 # UET Calendar
 
 UET Calendar is a Google Sheet file with Apps Script program for making UET's school-schedule on Google Calendar.
+Video demo: https://youtu.be/vb0erngKnVU
 
 ## Installation
 

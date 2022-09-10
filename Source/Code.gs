@@ -53,7 +53,7 @@ function gCalendar(infoSh, scheduleSh) {
       calendar = CalendarApp.getCalendarById(calendarId);
     }
 
-    // validate start date
+    // validate start date -> Monday
     startDate.setDate(startDate.getDate() + (1 + 7 - startDate.getDay()) % 7);
     infoSheet.getRange('B2').setValue(startDate);
 
@@ -99,7 +99,7 @@ function gCalendar(infoSh, scheduleSh) {
 
     var afterBracket = row[HP].split('(')[1];
 
-    // All weeks
+    // All 15 weeks
     if (afterBracket == null) return weeks;
     if (afterBracket.match(/\d+/g) == null) return weeks;
 
@@ -107,7 +107,7 @@ function gCalendar(infoSh, scheduleSh) {
     if (afterBracket.search("đến tuần") != -1) {
       var numbs = afterBracket.match(/\d+/g);
       if (numbs.length != 2) {
-        Logger.log("Error: Weird week format");
+        SpreadsheetApp.getUi().alert("Error: Weird week format");
       }
       else {
         for (var j=parseInt(numbs[0]); j<=parseInt(numbs[1]); j++) weeks.push(j);
@@ -123,7 +123,7 @@ function gCalendar(infoSh, scheduleSh) {
       var numbs = arr[i].match(/\d+/g);
 
       if (numbs.length > 2) {
-        Logger.log("Error: Weird week format");
+        SpreadsheetApp.getUi().alert("Error: Weird week format");
       }
       else if (arr[i].search('-') != -1) {
         for (var j=parseInt(numbs[0]); j<=parseInt(numbs[1]); j++) weeks.push(j);
@@ -136,6 +136,31 @@ function gCalendar(infoSh, scheduleSh) {
     return weeks;
   };
 
+  this.deleteEventSeries = function(row, rowNumb) {
+    var events = calendar.getEventSeriesById(row[ID].toString());
+    events.deleteEventSeries();
+
+    scheduleSheet.getRange(rowNumb, ID+1).clearContent();
+  };
+
+  this.setStartTime = function(row) {
+    var startTime = new Date(startDate);
+    var dayOfWeek = parseInt(row[Thu])-2;
+    var startHour = parseInt(row[Tiet].toString().split("-")[0]) + 6;
+    startTime.setDate(startTime.getDate()+dayOfWeek);
+    startTime.setHours(startHour);
+    return startTime;
+  };
+
+  this.setEndTime = function(row) {
+    var endTime = new Date(startDate);
+    var dayOfWeek = parseInt(row[Thu])-2;
+    var endHour = parseInt(row[Tiet].toString().split("-")[1]) + 7;
+    endTime.setDate(endTime.getDate()+dayOfWeek);
+    endTime.setHours(endHour);
+    return endTime;
+  };
+
   // Export from sheet to calendar
   this.exportToCalendar = function() {
 
@@ -144,70 +169,46 @@ function gCalendar(infoSh, scheduleSh) {
       var rowNumb = i + STARTROW;
       var row = table[i];
 
-      if (row[DK] == "") {
-        if (row[ID] != "") {
-          var events = calendar.getEventSeriesById(row[ID].toString());
-          events.deleteEventSeries();
-
-          scheduleSheet.getRange(rowNumb, ID+1).clearContent();
-        }
+      if ((row[DK] == "") == (row[ID] == ""))
+        continue;
+      if (row[DK] == "" && row[ID] != "") {
+        this.deleteEventSeries(row, rowNumb);
         continue;
       }
-      else {
-        if (row[ID] != "") continue;
-        else if (row[HP] == "" || row[Thu] == "" || row[Tiet] == "") {
-          SpreadsheetApp.getUi().alert("Invalid selection");
-          continue;
-        }
+      if (row[HP] == "" || row[Thu] == "" || row[Tiet] == "") {
+        SpreadsheetApp.getUi().alert("Invalid selection");
+        continue;
       }
 
       var title = row[Nhom] + " - " + row[HP];
-      var des = "Mã lớp học phần: " + row[MLHP] + "\nTín chỉ: " + row[TC] + "\nGiảng viên/ Trợ giảng: " + row[GVTG] + "\nGhi chú: " + row[GC];
+      var des = "Mã lớp học phần: "+row[MLHP] + "\nTín chỉ: "+row[TC] + "\nGiảng viên/ Trợ giảng: "+row[GVTG] + "\nGhi chú: "+row[GC];
       var loca = row[GD];
-
-      var startTime = new Date(startDate);
-      var endTime = new Date(startDate);
-
       var weeks = this.findWeeks(row);
-      var dayOfWeek = parseInt(row[Thu]);
+      var startTime = this.setStartTime(row);
+      var endTime = this.setEndTime(row);
 
-      var startHour = parseInt(row[Tiet].toString().split("-")[0]) + 6;
-      var endHour = parseInt(row[Tiet].toString().split("-")[1]) + 7;
-
-      startTime.setDate(startTime.getDate()+dayOfWeek-2);
-      endTime.setDate(endTime.getDate()+dayOfWeek-2);
-
-      startTime.setHours(startHour);
-      endTime.setHours(endHour);
-
-      var valid = true;
-      // Add something here . . .
-      
-      if (valid) {
-        if(weeks.length == 0) {
-          var eventSeries = calendar.createEventSeries( title, 
-                                      startTime, 
-                                      endTime, 
-                                      CalendarApp.newRecurrence().addWeeklyRule().times(15), 
-                                      {description: des, location: loca});
-
-          Logger.log(title + " " + startTime + " " + endTime);
-          scheduleSheet.getRange(rowNumb, ID+1).setValue(eventSeries.getId());
-        }
-        else {
-          startTime.setDate(startTime.getDate()+(weeks[0]-1)*7);
-          endTime.setDate(endTime.getDate()+(weeks[0]-1)*7);
-          
-          var eventSeries = calendar.createEventSeries( title, 
-                                      startTime, 
-                                      endTime, 
-                                      CalendarApp.newRecurrence().addWeeklyRule().onlyOnWeeks(weeks).times(weeks.length), 
-                                      {description: des, location: loca});
-
-          Logger.log(title + " " + startTime + " " + endTime + " " + weeks);
-          scheduleSheet.getRange(rowNumb, ID+1).setValue(eventSeries.getId());
-        }
+      var times = 0;
+      if(weeks.length == 0 && row[Nhom] == "CL") {
+        times = 15;
       }
+      else if (weeks.length == 0 && row[Nhom] != "CL") {
+        times = 14;
+        startTime.setDate(startTime.getDate()+7);
+        endTime.setDate(endTime.getDate()+7);
+      }
+      else {
+        times = weeks[weeks.length-1]-weeks[0]+1;
+        startTime.setDate(startTime.getDate()+(weeks[0]-1)*7);
+        endTime.setDate(endTime.getDate()+(weeks[0]-1)*7);
+      }
+
+      var eventSeries = calendar.createEventSeries( title, 
+                                                    startTime, 
+                                                    endTime, 
+                                                    CalendarApp.newRecurrence().addWeeklyRule().times(times),  //.onlyOnWeeks(weeks)
+                                                    {description: des, location: loca});
+      scheduleSheet.getRange(rowNumb, ID+1).setValue(eventSeries.getId());
+      Logger.log(title + " " + startTime + " " + endTime + " " + weeks);
     }
   };
 }

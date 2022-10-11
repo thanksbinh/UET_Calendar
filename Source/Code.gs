@@ -122,12 +122,15 @@ function gCalendar(infoSh, scheduleSh) {
 
       var numbs = arr[i].match(/\d+/g);
 
+      // (học tuần A,B,C)
       if (numbs.length > 2) {
-        SpreadsheetApp.getUi().alert("Error: Weird week format");
+        for (var j=0; j<numbs.length; j++) weeks.push(numbs[j]);
       }
+      // (học tuần A-B)
       else if (arr[i].search('-') != -1) {
         for (var j=parseInt(numbs[0]); j<=parseInt(numbs[1]); j++) weeks.push(j);
       }
+      // (học tuần A, B, C)
       else {
         weeks.push(parseInt(numbs[0]));
       }

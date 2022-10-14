@@ -9,6 +9,8 @@ Make a copy of [this](https://docs.google.com/spreadsheets/d/19MJjkbqBNYJMGRkgw_
 
 ## Usage
 
+Update 14/10/2022: End Date -> End Week
+
 Info Sheet: 
 - Change B1 to your calendar ID (ex: c_v7ss711irglpn681ua1sr5tado@group.calendar.google.com) or leave it blank (create new calendar)
 - Change B2 to the start date of the school year (format Date time)

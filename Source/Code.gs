@@ -23,11 +23,6 @@ function gSheet(name) {
   this.clearCalID = function() {
     sheet.getRange('B1').clearContent();;
   };
-
-  // Clear End Date 
-  this.clearEndDate = function() {
-    sheet.getRange('B3').clearContent();;
-  }
 }
 
 function gCalendar(infoSh, scheduleSh) {
@@ -36,7 +31,7 @@ function gCalendar(infoSh, scheduleSh) {
   var calendarId = infoSheet.getRange('B1').getValue().toString(); 
   var calendar;
   var startDate = infoSheet.getRange('B2').getValue();
-  var endDate = infoSheet.getRange('B3').getValue();
+  var endWeek = infoSheet.getRange('B3').getValue();
 
   var scheduleSheet = scheduleSh.getSheet();
   var table = scheduleSheet.getRange("A" + STARTROW.toString() + ":M").getValues();
@@ -58,9 +53,8 @@ function gCalendar(infoSh, scheduleSh) {
     infoSheet.getRange('B2').setValue(startDate);
 
     // init endDate
-    if (endDate == "") {
-      endDate = new Date(startDate);
-      endDate.setDate(endDate.getDate() + 15*7);
+    if (endWeek == "") {
+      endWeek = 15;
       infoSheet.getRange('B3').setValue(endDate);
     }
   };
@@ -76,7 +70,7 @@ function gCalendar(infoSh, scheduleSh) {
     CalendarApp.getCalendarById(calendarId).deleteCalendar();
   };
 
-  // Add "Tuần 1 .. 15"
+  // Add "Tuần 1 .. endWeek"
   this.addWeekNumb = function() {
 
     //First and Last day of the week
@@ -84,8 +78,8 @@ function gCalendar(infoSh, scheduleSh) {
     var lastDay = new Date(startDate);
     lastDay.setDate(firstDay.getDate() + 7);
 
-    // Add 15 times
-    for (i=0; i<15; i++) {
+    // Add endWeek times
+    for (i=0; i<endWeek; i++) {
       calendar.createEvent("Tuần " + (i+1).toString(), firstDay, lastDay);
 
       firstDay.setDate(firstDay.getDate() + 7);
@@ -99,7 +93,7 @@ function gCalendar(infoSh, scheduleSh) {
 
     var afterBracket = row[HP].split('(')[1];
 
-    // All 15 weeks
+    // Every weeks
     if (afterBracket == null) return weeks;
     if (afterBracket.match(/\d+/g) == null) return weeks;
 
@@ -122,15 +116,12 @@ function gCalendar(infoSh, scheduleSh) {
 
       var numbs = arr[i].match(/\d+/g);
 
-      // (học tuần A,B,C)
       if (numbs.length > 2) {
         for (var j=0; j<numbs.length; j++) weeks.push(numbs[j]);
       }
-      // (học tuần A-B)
       else if (arr[i].search('-') != -1) {
         for (var j=parseInt(numbs[0]); j<=parseInt(numbs[1]); j++) weeks.push(j);
       }
-      // (học tuần A, B, C)
       else {
         weeks.push(parseInt(numbs[0]));
       }
@@ -192,10 +183,10 @@ function gCalendar(infoSh, scheduleSh) {
 
       var times = 0;
       if(weeks.length == 0 && row[Nhom] == "CL") {
-        times = 15;
+        times = endWeek;
       }
       else if (weeks.length == 0 && row[Nhom] != "CL") {
-        times = 14;
+        times = endWeek-1;
         startTime.setDate(startTime.getDate()+7);
         endTime.setDate(endTime.getDate()+7);
       }
@@ -222,7 +213,7 @@ function onOpen() {
   "use strict";
   var menuEntries = [{
     name: "Make Calendar",
-    functionName: "make"
+    functionName: "makeCalendar"
   }, {
     name: "Add Week Number",
     functionName: "addWeekNumb"
@@ -242,7 +233,7 @@ var infoSh = new gSheet("info");
 var scheduleSh = new gSheet(infoSh.getSheet().getRange('B4').getValue().toString());
 var gCal = new gCalendar(infoSh, scheduleSh);
 
-function make() {
+function makeCalendar() {
   gCal.initCal();
   gCal.exportToCalendar();
 }
@@ -255,7 +246,6 @@ function addWeekNumb() {
 function deleteCalendar() {
   gCal.deleteCal();
   infoSh.clearCalID();
-  infoSh.clearEndDate();
   scheduleSh.clearID();
 }
 

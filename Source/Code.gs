@@ -158,7 +158,7 @@ function gCalendar(infoSh, scheduleSh) {
   // Export from sheet to calendar
   this.exportToCalendar = function() {
 
-    // Add subject if Dang ky
+    // Add subject if Dang ky and ID == ''
     for (var i=0; i<table.length; i++) {
       var rowNumb = i + STARTROW;
       var row = table[i];
@@ -203,6 +203,28 @@ function gCalendar(infoSh, scheduleSh) {
                                                     {description: des, location: loca});
       scheduleSheet.getRange(rowNumb, ID+1).setValue(eventSeries.getId());
       Logger.log(title + " " + startTime + " " + endTime + " " + weeks);
+
+      // Remove redundant events
+      let weekNumb = weeks[0];
+      var removeStartTime = startTime;
+      var removeEndTime = endTime;
+
+      for (let i = 0; i < weeks.length; i++) {
+        if (weekNumb != weeks[i]) {
+          i--;
+          var events = calendar.getEvents(removeStartTime,removeEndTime);
+          for (let event of events) {
+            if (event.getTitle() == title) {
+              Logger.log("Delete event: " + event.getTitle());
+              event.deleteEvent();
+            }
+          }
+        }
+
+        weekNumb++;
+        removeStartTime.setDate(removeStartTime.getDate()+7);
+        removeEndTime.setDate(removeEndTime.getDate()+7);
+      }
     }
   };
 }

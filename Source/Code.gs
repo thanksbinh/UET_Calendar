@@ -266,9 +266,16 @@ function gCalendar(infoSh, scheduleSh) {
   };
 }
 
+function findLatestSemesterId() {
+  let url = `http://112.137.129.87/qldt/`;
+  let response = UrlFetchApp.fetch(url);
+  let $ = Cheerio.load(response.getContentText());
+  let maxSemesterId = $('#SinhvienLmh_term_id :nth-child(2)').attr("value");
+  return maxSemesterId;
+}
+
 function fetchData(msv) {
-  // Todo: Add auto inc semester id
-  let semesterID = '036';
+  let semesterID = findLatestSemesterId();
   let url = `http://112.137.129.87/qldt/?SinhvienLmh%5BmasvTitle%5D=${msv}&SinhvienLmh%5BhotenTitle%5D=&SinhvienLmh%5BngaysinhTitle%5D=&SinhvienLmh%5BlopkhoahocTitle%5D=&SinhvienLmh%5BtenlopmonhocTitle%5D=&SinhvienLmh%5BtenmonhocTitle%5D=&SinhvienLmh%5Bnhom%5D=&SinhvienLmh%5BsotinchiTitle%5D=&SinhvienLmh%5Bghichu%5D=&SinhvienLmh%5Bterm_id%5D=${semesterID}&SinhvienLmh_page=1&ajax=sinhvien-lmh-grid`;
 
   let response = UrlFetchApp.fetch(url);

@@ -18,12 +18,12 @@ function gSheet(name) {
       let object = registerList[i];
       let group = registerList[i+1];
 
-      let foundCells = sheet.createTextFinder(object).findAll();
+      let foundCells = sheet.createTextFinder(object.replaceAll(' ', ' *')).useRegularExpression(true).findAll();
     
       // Loop through table to select all elements of this subject
       for (let j = 0; j < foundCells.length; j++) {
         if (foundCells[j].getColumn() != 5) continue;
-        if (foundCells[j].getValue().split('(')[0] != object) continue;
+        if (foundCells[j].getValue().split('(')[0].replaceAll(' ', '') != object.replaceAll(' ', '')) continue;
 
         let thisGroup = sheet.getRange("K" + foundCells[j].getRow()).getValue();
         if (thisGroup == group || (group != 'CL' && thisGroup.toUpperCase() == 'CL')) {
